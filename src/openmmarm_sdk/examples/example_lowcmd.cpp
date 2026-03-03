@@ -7,11 +7,11 @@
  *
  * 控制律: tau = Kp * (q_d - q) + Kd * (dq_d - dq) + tau_d
  *
- * 需要先启动 openmmarm_controller：
+ * 需要先启动仿真或真机环境：
  *   ros2 launch openmmarm_bringup sim_arm.launch.py
  *
  * 然后运行本程序：
- *   ./example_lowcmd [controller_ip]
+ *   ./example_lowcmd [server_ip]
  */
 
 #include "openmmarm_sdk/openmmarm_arm.h"

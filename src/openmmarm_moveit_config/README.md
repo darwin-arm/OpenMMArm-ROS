@@ -38,7 +38,7 @@ ros2 launch openmmarm_bringup real_arm.launch.py
 
 ### 3. 仅启动 move_group
 
-适合你已自行启动 `openmmarm_controller`、`openmmarm_hw`、`robot_state_publisher` 的场景：
+适合你已自行启动 `openmmarm_hw`、`robot_state_publisher` 的场景：
 
 ```bash
 ros2 launch openmmarm_moveit_config move_group.launch.py use_sim_time:=false

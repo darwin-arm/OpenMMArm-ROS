@@ -4,7 +4,7 @@
  * @file openmmarm_arm.h
  * @brief OpenMMARM 机械臂 SDK 控制接口
  *
- * 提供与 openmmarm_controller 通信的高层接口。
+ * 提供与机械臂服务端通信的高层接口。
  * 使用方法：
  *   1. 创建 OpenMMArmSdk 对象
  *   2. 调用 init() 等待连接
@@ -38,9 +38,9 @@ public:
   /**
    * @brief 构造 SDK 实例
    *
-   * @param controllerIP  openmmarm_controller 的 IP 地址
+   * @param controllerIP  机械臂服务端的 IP 地址
    * @param ownPort       本机绑定的 UDP 端口（0 = 系统分配）
-   * @param toPort        controller 的 SDK 监听端口（默认 8871）
+   * @param toPort        服务端的 SDK 监听端口（默认 8871）
    */
   OpenMMArmSdk(std::string controllerIP, unsigned int ownPort = 0,
                unsigned int toPort = 8871) {
@@ -58,7 +58,7 @@ public:
    * 超时（5 秒）则退出程序。
    */
   void init() {
-    std::cout << "等待连接 openmmarm_controller...\n";
+    std::cout << "等待连接机械臂服务端...\n";
 
     Timer timer(5.0);
     while (armState.mode == 0) {
@@ -76,14 +76,14 @@ public:
         }
       }
       if (timer.waitTime() < 0) {
-        std::cerr << "[ERROR] 连接 openmmarm_controller 超时失败\n";
+        std::cerr << "[ERROR] 连接机械臂服务端超时失败\n";
         exit(-1);
       }
     }
 
     // 同步当前位置作为初始目标
     armCmd.q_d = armState.q;
-    std::cout << "已连接到 openmmarm_controller\n";
+    std::cout << "已连接到机械臂服务端\n";
   }
 
   /**

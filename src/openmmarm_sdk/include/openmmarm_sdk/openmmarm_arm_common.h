@@ -4,10 +4,10 @@
  * @file openmmarm_arm_common.h
  * @brief OpenMMARM 机械臂 SDK 通信数据结构定义
  *
- * 定义了上层 SDK 客户端与 Controller 之间通信的数据包格式。
+ * 定义了上层 SDK 客户端与机械臂服务端之间通信的数据包格式。
  * 通过 UDP 传输，使用 packed 结构确保跨平台二进制兼容。
  *
- * 此文件是唯一权威定义，被 openmmarm_hw 和 openmmarm_controller 共同引用。
+ * 此文件是唯一权威定义，被 openmmarm_sdk 引用。
  */
 
 #include <algorithm>

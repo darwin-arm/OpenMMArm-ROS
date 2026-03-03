@@ -3,11 +3,11 @@
  * @brief 关节速度控制和位置控制示例
  *
  * 演示如何使用 OpenMMArmSdk 进行关节速度控制和位置控制。
- * 需要先启动 openmmarm_controller：
+ * 需要先启动仿真或真机环境：
  *   ros2 launch openmmarm_bringup sim_arm.launch.py
  *
  * 然后运行本程序：
- *   ./example_joint_ctrl [controller_ip]
+ *   ./example_joint_ctrl [server_ip]
  */
 
 #include "openmmarm_sdk/openmmarm_arm.h"

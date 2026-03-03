@@ -3,11 +3,10 @@
 OpenMMARM 仿真模式启动文件
 
 启动完整的仿真环境：
-  1. openmmarm_controller（ROS 通信模式 + 仿真）
-  2. openmmarm_hw（ros2_control 硬件接口）
-  3. move_group（MoveIt 运动规划）
-  4. robot_state_publisher（TF 发布）
-  5. rviz2（可选）
+  1. openmmarm_hw（ros2_control 硬件接口，内嵌 MuJoCo 仿真）
+  2. move_group（MoveIt 运动规划）
+  3. robot_state_publisher（TF 发布）
+  4. rviz2（可选）
 """
 
 import os
@@ -44,7 +43,6 @@ def generate_launch_description():
     use_rviz = LaunchConfiguration('use_rviz')
     use_sim_time = LaunchConfiguration('use_sim_time')
     use_moveit = LaunchConfiguration('use_moveit')
-    use_mujoco_viewer = LaunchConfiguration('use_mujoco_viewer')
 
     # 使用 xacro 处理 robot.xacro
     xacro_file = os.path.join(description_pkg, 'urdf', 'robot.xacro')
@@ -63,44 +61,22 @@ def generate_launch_description():
         ],
     )
 
-    # openmmarm_controller 节点（ROS 模式，模拟真实硬件）
-    # 注意：在 sim 模式下，我们启动 controller 并让它连接到 loopback
-    # 这里的 controller 是被控对象，不是 moveit 的 controller
-    controller_node = Node(
-        package='openmmarm_controller',
-        executable='openmmarm_ctrl',
-        name='openmmarm_controller',
-        output='screen',
-        parameters=[
-            {'use_sim_time': use_sim_time},
-            {'communication': 'SIM'},
-            {'sim.model_path': LaunchConfiguration('sim_model_path')},
-            {'sim.viewer': use_mujoco_viewer},
-        ],
-    )
-
-    # openmmarm_hw 启动（ros2_control 硬件接口）
-    # 延时 2 秒启动，等待 controller 就绪
-    hw_launch = TimerAction(
-        period=2.0,
-        actions=[
-            IncludeLaunchDescription(
-                PythonLaunchDescriptionSource([
-                    PathJoinSubstitution([
-                        FindPackageShare('openmmarm_hw'),
-                        'launch',
-                        'openmmarm_hw.launch.py',
-                    ])
-                ]),
-                launch_arguments={'use_sim_time': use_sim_time}.items(),
-            )
-        ]
+    # openmmarm_hw 启动（ros2_control 硬件接口，内嵌 MuJoCo）
+    hw_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            PathJoinSubstitution([
+                FindPackageShare('openmmarm_hw'),
+                'launch',
+                'openmmarm_hw.launch.py',
+            ])
+        ]),
+        launch_arguments={'use_sim_time': use_sim_time}.items(),
     )
 
     # MoveIt move_group 启动
-    # 延时 5 秒启动，等待 hw 就绪
+    # 延时 3 秒启动，等待 hw 就绪
     moveit_launch = TimerAction(
-        period=5.0,
+        period=3.0,
         actions=[
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([
@@ -157,17 +133,6 @@ def generate_launch_description():
             default_value='true',
             description='启动 MoveIt move_group',
         ),
-        DeclareLaunchArgument(
-            'sim_model_path',
-            default_value='',
-            description='MuJoCo 模型文件路径 (留空则自动使用 openmmarm_description 中的 URDF)',
-        ),
-        DeclareLaunchArgument(
-            'use_mujoco_viewer',
-            default_value='true',
-            description='是否开启 MuJoCo 原生可视化窗口',
-        ),
-        controller_node,
         robot_state_publisher_node,
         hw_launch,
         moveit_launch,

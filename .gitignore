@@ -46,3 +46,4 @@ log/
 compile_commands.json
 .cache
 MUJOCO_LOG.TXT
+.ros_logs

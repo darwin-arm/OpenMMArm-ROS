@@ -15,7 +15,8 @@
   <depend>pluginlib</depend>
   <depend>rclcpp_action</depend>
   <depend>control_msgs</depend>
-  <depend>openmmarm_sdk</depend>
+  <depend>ament_index_cpp</depend>
+  <build_depend>yaml-cpp</build_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

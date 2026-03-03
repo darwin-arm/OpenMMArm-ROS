@@ -1,0 +1,36 @@
+# OpenMMARM 控制配置
+# 此文件由 openmmarm_hw 插件在初始化时读取，不作为 ROS 2 参数文件
+
+# 通信模式: "SIM" (MuJoCo 仿真) 或 "UDP" (真机)
+communication: "SIM"
+
+# 控制频率 (Hz)
+# 同时决定 ros2_control 更新频率和 MuJoCo 仿真步长 (timestep = 1/update_rate)
+update_rate: 2000
+
+# 仿真配置 (communication=SIM 时使用)
+sim:
+  model_path: ""   # 留空则自动使用 openmmarm_description 中的 URDF
+  viewer: true
+
+# UDP 通信配置 (communication=UDP 时使用)
+udp:
+  mcu_ip: "192.168.123.110"
+  mcu_port: 8881
+  local_port: 8871
+
+# 控制模式: "position" (高刚度位置跟踪) 或 "impedance" (低刚度柔顺控制)
+# 该参数决定发送的 PD 增益 (Kp/Kd)
+control_mode: "impedance"
+
+# 各模式下的 PD 增益 (按关节顺序: J1-J6)
+# 控制律: tau = Kp * (q_d - q) + Kd * (dq_d - dq) + tau_d
+# 临界阻尼参考: Kd = 2 * sqrt(Kp * J), J 为关节等效惯量
+# J1-J4 惯量较大, J5-J6 惯量较小
+pd_gains:
+  position:
+    kp: [100.0, 100.0, 100.0, 100.0, 50.0, 50.0]
+    kd: [10.0, 10.0, 10.0, 10.0, 5.0, 5.0]
+  impedance:
+    kp: [25.0, 25.0, 25.0, 25.0, 15.0, 15.0]
+    kd: [10.0, 10.0, 10.0, 10.0, 5.0, 5.0]

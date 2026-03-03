@@ -7,8 +7,7 @@ OpenMMArm 的统一启动包，提供仿真与真机两种启动入口。
 `openmmarm_bringup` 不实现控制算法，它负责把以下模块按顺序拉起：
 
 - `openmmarm_description`：机器人模型与 `robot_state_publisher`
-- `openmmarm_controller`：底层控制节点（FSM）
-- `openmmarm_hw`：`ros2_control` 硬件插件
+- `openmmarm_hw`：`ros2_control` 硬件插件（内嵌 MuJoCo 仿真 / UDP 真机通信）
 - `openmmarm_moveit_config`：`move_group` 规划服务
 - `rviz2`：可视化（可选）
 
@@ -38,16 +37,7 @@ ros2 launch openmmarm_bringup sim_arm.launch.py \
 
 ### 3. 真机模式
 
-`real_arm.launch.py` 默认不拉起 `openmmarm_controller`，需要先单独启动控制器：
-
-```bash
-ros2 run openmmarm_controller openmmarm_ctrl --ros-args \
-  -p communication:=UDP \
-  -p udp.mcu_ip:=192.168.123.110 \
-  -p udp.mcu_port:=8881
-```
-
-然后启动真机 bringup：
+将 `src/openmmarm_hw/config/control_config.yaml` 中 `communication` 改为 `"UDP"` 并配置 MCU 地址，然后：
 
 ```bash
 ros2 launch openmmarm_bringup real_arm.launch.py use_rviz:=true use_moveit:=true

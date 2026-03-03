@@ -3,11 +3,12 @@
 OpenMMARM 实机模式启动文件
 
 启动完整的实机控制环境：
-  1. openmmarm_controller（UDP 通信模式，连接真实机械臂）
-  2. openmmarm_hw（ros2_control 硬件接口）
-  3. move_group（MoveIt 运动规划）
-  4. robot_state_publisher（TF 发布）
-  5. rviz2（可选）
+  1. openmmarm_hw（ros2_control 硬件接口，通过 IOUDP 连接真实机械臂）
+  2. move_group（MoveIt 运动规划）
+  3. robot_state_publisher（TF 发布）
+  4. rviz2（可选）
+
+注意：真机模式需要先将 control_config.yaml 中 communication 改为 "UDP" 并配置 MCU 地址。
 """
 
 import os

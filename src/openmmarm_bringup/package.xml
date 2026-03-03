@@ -12,7 +12,6 @@
   <exec_depend>openmmarm_description</exec_depend>
   <exec_depend>openmmarm_hw</exec_depend>
   <exec_depend>openmmarm_moveit_config</exec_depend>
-  <exec_depend>openmmarm_controller</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>rviz2</exec_depend>
 

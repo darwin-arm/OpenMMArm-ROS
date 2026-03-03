@@ -1,7 +1,9 @@
-#include "io/IOUDP.h"
+#include "openmmarm_hw/io_udp.h"
 #include <chrono>
 #include <iostream>
 #include <thread>
+
+namespace openmmarm_hw {
 
 IOUDP::IOUDP(const std::string &mcu_ip, int mcu_port, int local_port)
     : mcu_ip_(mcu_ip), mcu_port_(mcu_port), local_port_(local_port) {
@@ -17,20 +19,17 @@ IOUDP::~IOUDP() {
 }
 
 bool IOUDP::init() {
-  // 创建 UDP Socket
   socket_fd_ = socket(AF_INET, SOCK_DGRAM, 0);
   if (socket_fd_ < 0) {
     std::cerr << "[IOUDP] 创建 Socket 失败" << std::endl;
     return false;
   }
 
-  // 设置接收超时
   struct timeval tv;
   tv.tv_sec = recv_timeout_ms_ / 1000;
   tv.tv_usec = (recv_timeout_ms_ % 1000) * 1000;
   setsockopt(socket_fd_, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
-  // 绑定本地地址
   memset(&local_addr_, 0, sizeof(local_addr_));
   local_addr_.sin_family = AF_INET;
   local_addr_.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -44,7 +43,6 @@ bool IOUDP::init() {
     return false;
   }
 
-  // 设置目标地址 (MCU)
   memset(&mcu_addr_, 0, sizeof(mcu_addr_));
   mcu_addr_.sin_family = AF_INET;
   mcu_addr_.sin_port = htons(mcu_port_);
@@ -55,11 +53,9 @@ bool IOUDP::init() {
     return false;
   }
 
-  // 发送初始化包并等待响应
   LowLevelCmd init_cmd{};
   LowLevelState init_state{};
 
-  // 尝试连接
   for (int i = 0; i < 10; ++i) {
     sendCmd(&init_cmd);
     if (recvState(&init_state)) {
@@ -92,7 +88,6 @@ bool IOUDP::isConnected() { return is_connected_; }
 void IOUDP::sendCmd(const LowLevelCmd *cmd) {
   UDPSendCmd pkt{};
 
-  // 填充数据包
   for (int i = 0; i < 6; ++i) {
     pkt.mode[i] = cmd->mode[i];
     pkt.q[i] = cmd->q[i];
@@ -102,11 +97,9 @@ void IOUDP::sendCmd(const LowLevelCmd *cmd) {
     pkt.kd[i] = cmd->kd[i];
   }
 
-  // 计算 CRC
   pkt.crc = calculateCRC32(reinterpret_cast<uint8_t *>(&pkt),
                            sizeof(pkt) - sizeof(pkt.crc));
 
-  // 发送
   sendto(socket_fd_, &pkt, sizeof(pkt), 0, (struct sockaddr *)&mcu_addr_,
          sizeof(mcu_addr_));
 }
@@ -120,7 +113,6 @@ bool IOUDP::recvState(LowLevelState *state) {
                               (struct sockaddr *)&recv_addr, &addr_len);
 
   if (recv_len < 0) {
-    // 超时或错误
     return false;
   }
 
@@ -129,13 +121,11 @@ bool IOUDP::recvState(LowLevelState *state) {
     return false;
   }
 
-  // 验证包头
   if (pkt.head[0] != 0xFE || pkt.head[1] != 0xEF) {
     std::cerr << "[IOUDP] 无效的包头" << std::endl;
     return false;
   }
 
-  // 验证 CRC
   uint32_t expected_crc = calculateCRC32(reinterpret_cast<uint8_t *>(&pkt),
                                          sizeof(pkt) - sizeof(pkt.crc));
   if (pkt.crc != expected_crc) {
@@ -143,7 +133,6 @@ bool IOUDP::recvState(LowLevelState *state) {
     return false;
   }
 
-  // 解析数据
   for (int i = 0; i < 6; ++i) {
     state->mode[i] = pkt.mode[i];
     state->q[i] = pkt.q[i];
@@ -157,7 +146,6 @@ bool IOUDP::recvState(LowLevelState *state) {
 }
 
 uint32_t IOUDP::calculateCRC32(const uint8_t *data, size_t len) {
-  // CRC-32 (IEEE 802.3)
   uint32_t crc = 0xFFFFFFFF;
   static const uint32_t table[256] = {
       0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA, 0x076DC419, 0x706AF48F,
@@ -210,3 +198,5 @@ uint32_t IOUDP::calculateCRC32(const uint8_t *data, size_t len) {
 
   return crc ^ 0xFFFFFFFF;
 }
+
+} // namespace openmmarm_hw

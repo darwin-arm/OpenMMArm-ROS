@@ -1,9 +1,9 @@
 # OpenMMARM 硬件接口配置文件
-# 仅用于配置 controller_manager，ros2_control 的硬件参数请见 URDF
+# 控制模式和 PD 增益配置请见 control_config.yaml
 
 controller_manager:
   ros__parameters:
-    update_rate: 250  # Hz
+    update_rate: 2000  # Hz — 需与 control_config.yaml 中的 update_rate 保持一致
     use_sim_time: false
 
     # 控制器列表
@@ -26,6 +26,7 @@ openmmarm_arm_controller:
     interface_name: position
     command_interfaces:
       - position
+      - velocity
     state_interfaces:
       - position
       - velocity
