@@ -1,4 +1,4 @@
-# OpenMMArm-SDK
+# OpenMMArm-ROS
 
 OpenMMArm 的 ROS 2 工作空间，包含 `ros2_control` 硬件接口、MoveIt 配置、SDK 和一键启动包。
 

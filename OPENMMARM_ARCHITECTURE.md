@@ -19,7 +19,6 @@ OpenMMArm 软件栈将"规划、硬件通信"解耦，核心目标是：
 | `openmmarm_interfaces` | 消息定义 | - | `MotorCmd`/`MotorState` |
 | `openmmarm_moveit_config` | 规划配置 | SRDF/YAML | `move_group` 规划服务 |
 | `openmmarm_hw` | ros2_control 硬件插件（内嵌 IO） | 轨迹控制器命令 | 直接驱动仿真/真机 |
-| `openmmarm_sdk` | C++ SDK 客户端库 | 用户程序控制指令 | UDP `ArmCmd` / `ArmState` |
 
 ## 3. 分层与数据流
 
