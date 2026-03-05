@@ -1,6 +1,7 @@
 #include "openmmarm_hw/openmmarm_hw.hpp"
 #include "openmmarm_hw/arm_dynamics.h"
 #include "openmmarm_hw/io_mujoco.h"
+#include "openmmarm_hw/io_serial.h"
 #include "openmmarm_hw/io_udp.h"
 
 #include <limits>
@@ -94,15 +95,26 @@ OpenMMArmHW::on_init(const hardware_interface::HardwareInfo &info) {
       }
     }
 
+    if (config["serial"]) {
+      if (config["serial"]["port"]) {
+        serial_port_ = config["serial"]["port"].as<std::string>();
+      }
+      if (config["serial"]["baud_rate"]) {
+        serial_baud_rate_ = config["serial"]["baud_rate"].as<int>();
+      }
+      if (config["serial"]["link_timeout_ms"]) {
+        serial_link_timeout_ms_ = config["serial"]["link_timeout_ms"].as<int>();
+      }
+    }
+
     RCLCPP_INFO(rclcpp::get_logger("OpenMMArmHW"),
                 "从 YAML 加载配置: communication=%s, mode=%s, "
                 "Kp=[%.1f,%.1f,%.1f,%.1f,%.1f,%.1f], "
                 "Kd=[%.1f,%.1f,%.1f,%.1f,%.1f,%.1f]",
                 communication_mode_.c_str(), control_mode_.c_str(),
-                default_kp_[0], default_kp_[1], default_kp_[2],
-                default_kp_[3], default_kp_[4], default_kp_[5],
-                default_kd_[0], default_kd_[1], default_kd_[2],
-                default_kd_[3], default_kd_[4], default_kd_[5]);
+                default_kp_[0], default_kp_[1], default_kp_[2], default_kp_[3],
+                default_kp_[4], default_kp_[5], default_kd_[0], default_kd_[1],
+                default_kd_[2], default_kd_[3], default_kd_[4], default_kd_[5]);
   } catch (const std::exception &e) {
     RCLCPP_WARN(rclcpp::get_logger("OpenMMArmHW"),
                 "无法从 YAML 加载配置: %s，使用默认值", e.what());
@@ -124,8 +136,8 @@ OpenMMArmHW::on_init(const hardware_interface::HardwareInfo &info) {
 
 CallbackReturn
 OpenMMArmHW::on_configure(const rclcpp_lifecycle::State & /*previous_state*/) {
-  RCLCPP_INFO(rclcpp::get_logger("OpenMMArmHW"),
-              "配置硬件接口，通信模式: %s", communication_mode_.c_str());
+  RCLCPP_INFO(rclcpp::get_logger("OpenMMArmHW"), "配置硬件接口，通信模式: %s",
+              communication_mode_.c_str());
 
   // 根据通信模式创建 IOInterface
   if (communication_mode_ == "SIM") {
@@ -133,8 +145,8 @@ OpenMMArmHW::on_configure(const rclcpp_lifecycle::State & /*previous_state*/) {
     std::string model_path = sim_model_path_;
     if (model_path.empty()) {
       try {
-        std::string desc_pkg =
-            ament_index_cpp::get_package_share_directory("openmmarm_description");
+        std::string desc_pkg = ament_index_cpp::get_package_share_directory(
+            "openmmarm_description");
         model_path = desc_pkg + "/urdf/openmmarm.urdf.xacro";
 
         // 如果 xacro 不存在，尝试 urdf
@@ -149,14 +161,23 @@ OpenMMArmHW::on_configure(const rclcpp_lifecycle::State & /*previous_state*/) {
     }
 
     RCLCPP_INFO(rclcpp::get_logger("OpenMMArmHW"),
-                "创建 IOMujoco: model=%s, viewer=%s",
-                model_path.c_str(), sim_viewer_ ? "true" : "false");
+                "创建 IOMujoco: model=%s, viewer=%s", model_path.c_str(),
+                sim_viewer_ ? "true" : "false");
 
-    ioInter_ = std::make_unique<IOMujoco>(model_path, 1.0 / update_rate_, sim_viewer_);
+    ioInter_ =
+        std::make_unique<IOMujoco>(model_path, 1.0 / update_rate_, sim_viewer_);
+  } else if (communication_mode_ == "SERIAL") {
+    RCLCPP_INFO(
+        rclcpp::get_logger("OpenMMArmHW"),
+        "创建 IOSerial: %s @ %d bps (link_timeout=%d ms)",
+        serial_port_.c_str(), serial_baud_rate_, serial_link_timeout_ms_);
+
+    ioInter_ = std::make_unique<IOSerial>(serial_port_, serial_baud_rate_,
+                                          serial_link_timeout_ms_);
   } else {
     RCLCPP_INFO(rclcpp::get_logger("OpenMMArmHW"),
-                "创建 IOUDP: %s:%d (本地端口: %d)",
-                mcu_ip_.c_str(), mcu_port_, mcu_local_port_);
+                "创建 IOUDP: %s:%d (本地端口: %d)", mcu_ip_.c_str(), mcu_port_,
+                mcu_local_port_);
 
     ioInter_ = std::make_unique<IOUDP>(mcu_ip_, mcu_port_, mcu_local_port_);
   }
@@ -336,7 +357,23 @@ OpenMMArmHW::write(const rclcpp::Time & /*time*/,
   }
 
   // 发送指令，接收状态
-  ioInter_->sendRecv(&lowCmd_, &lowState_);
+  const bool comm_ok = ioInter_->sendRecv(&lowCmd_, &lowState_);
+  if (!comm_ok) {
+    ++comm_fail_count_;
+    if (comm_healthy_last_cycle_ || (comm_fail_count_ % 500 == 0)) {
+      RCLCPP_WARN(rclcpp::get_logger("OpenMMArmHW"),
+                  "底层通信失败/超时 (连续失败: %zu)", comm_fail_count_);
+    }
+    comm_healthy_last_cycle_ = false;
+    return hardware_interface::return_type::OK;
+  }
+
+  if (!comm_healthy_last_cycle_) {
+    RCLCPP_INFO(rclcpp::get_logger("OpenMMArmHW"),
+                "底层通信恢复 (此前连续失败: %zu)", comm_fail_count_);
+  }
+  comm_healthy_last_cycle_ = true;
+  comm_fail_count_ = 0;
 
   return hardware_interface::return_type::OK;
 }

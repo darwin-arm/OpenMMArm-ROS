@@ -21,6 +21,7 @@ find_package(ament_index_cpp REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GLFW QUIET glfw3)
+pkg_check_modules(LIBSERIAL REQUIRED libserial)
 
 # MuJoCo 仿真库
 file(GLOB MUJOCO_HOME_DIRS "$ENV{HOME}/.mujoco/mujoco-*")
@@ -61,12 +62,14 @@ endif()
 include_directories(
   include
   ${MUJOCO_INCLUDE_DIR}
+  ${LIBSERIAL_INCLUDE_DIRS}
 )
 
 # 硬件接口库
 add_library(${PROJECT_NAME} SHARED
   src/openmmarm_hw.cpp
   src/io_mujoco.cpp
+  src/io_serial.cpp
   src/io_udp.cpp
   src/arm_dynamics.cpp
 )
@@ -93,6 +96,7 @@ ament_target_dependencies(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   yaml-cpp
   ${MUJOCO_LIBRARY}
+  ${LIBSERIAL_LIBRARIES}
 )
 
 # 导出插件描述文件

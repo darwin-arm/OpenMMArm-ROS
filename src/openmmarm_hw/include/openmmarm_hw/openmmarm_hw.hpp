@@ -97,6 +97,15 @@ private:
   int mcu_local_port_ = 8871;
   double update_rate_ = 250.0;
 
+  // 串口通信配置
+  std::string serial_port_ = "/dev/ttyACM0";
+  int serial_baud_rate_ = 921600;
+  int serial_link_timeout_ms_ = 200;
+
+  // 通信健康监控（用于 write() 告警）
+  size_t comm_fail_count_ = 0;
+  bool comm_healthy_last_cycle_ = true;
+
   // Gripper Action Server
   rclcpp::Node::SharedPtr node_;
   rclcpp_action::Server<GripperAction>::SharedPtr gripper_action_server_;
